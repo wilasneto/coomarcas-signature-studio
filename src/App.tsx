@@ -522,68 +522,108 @@ export default function App() {
     setIsProcessingBulk(true);
     setBulkProgress(0);
     const zip = new JSZip();
-    let capturedCount = 0;
+    
+    // Cache de Promises de imagem para evitar carregar logotipos redundantes repetidamente do proxy/rede
+    const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
+    
+    const loadImgCached = (src: string | null): Promise<HTMLImageElement | null> => {
+      if (!src) return Promise.resolve(null);
+      const url = getLoadedImageUrl(src);
+      
+      let promise = imageCache.get(url);
+      if (!promise) {
+        promise = new Promise<HTMLImageElement | null>((res) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => res(img);
+          img.onerror = () => res(null);
+          img.src = url;
+        });
+        imageCache.set(url, promise);
+      }
+      return promise;
+    };
 
-    // Usaremos uma função auxiliar de renderização manual para o lote
+    // Função de renderização rápida usando cache de imagens
     const renderToTempCanvas = (item: SignatureData): Promise<string> => {
       return new Promise(async (resolve) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 900;
-        canvas.height = 252;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve('');
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 900;
+          canvas.height = 252;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve('');
 
-        // Carrega fotos
-        const loadImg = (src: string | null): Promise<HTMLImageElement | null> => {
-          return new Promise((res) => {
-            if (!src) return res(null);
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => res(img);
-            img.onerror = () => res(null);
-            img.src = getLoadedImageUrl(src);
-          });
-        };
+          const profImg = await loadImgCached(item.photo);
+          const layout = (item.layout || activeLayout) as LayoutType;
+          const logoImg = await loadImgCached(item.brandLogo || brandLogos[layout]);
+          const secLogoImg = await loadImgCached(item.secondaryLogo || secondaryLogos[layout]);
+          
+          const sub1 = item.coomarcasSubLogos?.[0] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[0] : null);
+          const sub2 = item.coomarcasSubLogos?.[1] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[1] : null);
+          const sub3 = item.coomarcasSubLogos?.[2] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[2] : null);
+          const sub4 = item.coomarcasSubLogos?.[3] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[3] : null);
 
-        const profImg = await loadImg(item.photo);
-        const layout = (item.layout || activeLayout) as LayoutType;
-        const logoImg = await loadImg(item.brandLogo || brandLogos[layout]);
-        const secLogoImg = await loadImg(item.secondaryLogo || secondaryLogos[layout]);
-        
-        const sub1 = item.coomarcasSubLogos?.[0] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[0] : null);
-        const sub2 = item.coomarcasSubLogos?.[1] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[1] : null);
-        const sub3 = item.coomarcasSubLogos?.[2] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[2] : null);
-        const sub4 = item.coomarcasSubLogos?.[3] || (layout === 'coomarcas' ? coomarcasGlobalSubLogos[3] : null);
-
-        const [subImg1, subImg2, subImg3, subImg4] = await Promise.all([
-          loadImg(sub1),
-          loadImg(sub2),
-          loadImg(sub3),
-          loadImg(sub4)
-        ]);
-        
-        // Ensure social visibility is respected in bulk export if not provided in item
-        const finalItem = {
-          ...item,
-          socialVisibility: item.socialVisibility || socialVisibilities[layout] || DEFAULT_DATA.socialVisibility
-        };
-        
-        drawSignatureToCanvas(ctx, finalItem, layout, profImg, logoImg, secLogoImg, [subImg1, subImg2, subImg3, subImg4]);
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
+          const [subImg1, subImg2, subImg3, subImg4] = await Promise.all([
+            loadImgCached(sub1),
+            loadImgCached(sub2),
+            loadImgCached(sub3),
+            loadImgCached(sub4)
+          ]);
+          
+          const finalItem = {
+            ...item,
+            socialVisibility: item.socialVisibility || socialVisibilities[layout] || DEFAULT_DATA.socialVisibility
+          };
+          
+          drawSignatureToCanvas(ctx, finalItem, layout, profImg, logoImg, secLogoImg, [subImg1, subImg2, subImg3, subImg4]);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        } catch (e) {
+          console.error("Erro ao renderizar assinatura:", e);
+          resolve('');
+        }
       });
     };
     
     try {
+      const concurrencyLimit = 10; // Processar até 10 assinaturas em paralelo simultaneamente
+      const results: { index: number; dataUrl: string; item: SignatureData }[] = [];
+      let completedCount = 0;
+
+      // Pool de trabalhadores concorrentes distribuídos por índices
+      const runWorker = async (indices: number[]) => {
+        for (const i of indices) {
+          const item = bulkData[i];
+          const dataUrl = await renderToTempCanvas(item);
+          if (dataUrl) {
+            results.push({ index: i, dataUrl, item });
+          }
+          completedCount++;
+          setBulkProgress(Math.round((completedCount / bulkData.length) * 100));
+        }
+      };
+
+      // Gerador de fila balanceada
+      const workers: number[][] = Array.from({ length: Math.min(concurrencyLimit, bulkData.length) }, () => []);
       for (let i = 0; i < bulkData.length; i++) {
-        const item = bulkData[i];
-        const dataUrl = await renderToTempCanvas(item);
-        
+        workers[i % workers.length].push(i);
+      }
+
+      // Executar trabalhadores em paralelo
+      await Promise.all(workers.map(indices => runWorker(indices)));
+
+      // Ordenar resultados pelo índice original antes de salvar para consistência
+      results.sort((a, b) => a.index - b.index);
+
+      let capturedCount = 0;
+      for (const res of results) {
+        const { index, dataUrl, item } = res;
         if (dataUrl && dataUrl.length > 1000) {
           const base64Data = dataUrl.split(',')[1];
           const folderName = item.layout || activeLayout;
           const layoutFolder = zip.folder(folderName);
           
-          const cleanName = String(item.name || `assinatura-${i+1}`)
+          const cleanName = String(item.name || `assinatura-${index+1}`)
             .toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
@@ -592,8 +632,6 @@ export default function App() {
           layoutFolder?.file(`${cleanName}.jpg`, base64Data, {base64: true});
           capturedCount++;
         }
-        
-        setBulkProgress(Math.round(((i + 1) / bulkData.length) * 100));
       }
 
       if (capturedCount > 0) {
