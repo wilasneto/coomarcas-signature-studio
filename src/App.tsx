@@ -180,6 +180,34 @@ function convertCloudImageUrl(url: string | null | undefined): string | null {
     }
   }
 
+  // 4. SharePoint & OneDrive for Business
+  if (trimmedUrl.includes('sharepoint.com')) {
+    let spUrl = trimmedUrl;
+    
+    // Convert short sharing links (e.g., :i:/g/ -> :i:/d/, :u:/g/ -> :u:/d/, :i:/s/ -> :i:/d/, :i:/r/ -> :i:/d/)
+    if (/(\/:[a-z]:)\/[grs]\//i.test(spUrl)) {
+      spUrl = spUrl.replace(/(\/:[a-z]:)\/[grs]\//gi, '$1/d/');
+    }
+    
+    // Replace onedrive.aspx viewer with download.aspx to bypass the preview page and get the direct image byte stream
+    if (spUrl.includes('onedrive.aspx')) {
+      spUrl = spUrl.replace(/onedrive\.aspx/gi, 'download.aspx');
+    }
+    
+    // Replace doc.aspx viewer with download.aspx
+    if (spUrl.includes('Doc.aspx')) {
+      spUrl = spUrl.replace(/Doc\.aspx/gi, 'download.aspx');
+    }
+
+    // Force download parameter if not already present
+    if (!spUrl.includes('download=1') && !spUrl.includes('/:i:/d/') && !spUrl.includes('/:u:/d/') && !spUrl.includes('/:b:/d/') && !spUrl.includes('/:v:/d/') && !spUrl.includes('/:f:/d/')) {
+      const separator = spUrl.includes('?') ? '&' : '?';
+      spUrl = spUrl + separator + 'download=1';
+    }
+    
+    return spUrl;
+  }
+
   return trimmedUrl;
 }
 
