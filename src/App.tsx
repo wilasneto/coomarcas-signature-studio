@@ -1192,7 +1192,132 @@ export default function App() {
                            </button>
                          )}
                        </div>
-                    </div>
+
+                       {data.photo && (
+                         <div className="pt-4 border-t border-zinc-200/50 space-y-4">
+                           <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Ajuste de Tamanho e Posição da Foto</span>
+                           
+                           <div className="bg-zinc-50/50 border border-zinc-150 rounded-2xl p-4 space-y-4">
+                             {/* Tamanho Proporcional (Zoom) */}
+                             <div className="space-y-1.5">
+                               <div className="flex items-center justify-between">
+                                 <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Tamanho Proporcional (Zoom)</label>
+                                 <span className="text-[10px] font-bold text-blue-650 font-mono bg-blue-50 px-2 py-0.5 rounded-full">{Math.round(data.photoScale * 100)}%</span>
+                               </div>
+                               <input 
+                                 type="range" 
+                                 min="0.1" 
+                                 max="4" 
+                                 step="0.01" 
+                                 value={data.photoScale} 
+                                 onChange={(e) => setData(prev => ({ ...prev, photoScale: parseFloat(e.target.value) }))}
+                                 className="w-full h-1.5 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-blue-650 focus:outline-none"
+                               />
+                             </div>
+
+                             {/* Posição da Foto (Horizontal e Vertical) */}
+                             <div className="grid grid-cols-2 gap-4 pt-1">
+                               {/* Horizontal X */}
+                               <div className="space-y-1.5">
+                                 <div className="flex items-center justify-between">
+                                   <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Posição X (Horizontal)</label>
+                                   <span className="text-[10px] font-bold text-zinc-650 font-mono bg-zinc-100 px-1.5 py-0.2 rounded">{Math.round(data.photoX)}px</span>
+                                 </div>
+                                 <input 
+                                   type="range" 
+                                   min="-300" 
+                                   max="300" 
+                                   step="1" 
+                                   value={data.photoX} 
+                                   onChange={(e) => setData(prev => ({ ...prev, photoX: parseFloat(e.target.value) }))}
+                                   className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
+                                 />
+                               </div>
+
+                               {/* Vertical Y */}
+                               <div className="space-y-1.5">
+                                 <div className="flex items-center justify-between">
+                                   <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Posição Y (Vertical)</label>
+                                   <span className="text-[10px] font-bold text-zinc-650 font-mono bg-zinc-100 px-1.5 py-0.2 rounded">{Math.round(data.photoY)}px</span>
+                                 </div>
+                                 <input 
+                                   type="range" 
+                                   min="-300" 
+                                   max="300" 
+                                   step="1" 
+                                   value={data.photoY} 
+                                   onChange={(e) => setData(prev => ({ ...prev, photoY: parseFloat(e.target.value) }))}
+                                   className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
+                                 />
+                               </div>
+                             </div>
+
+                             {/* Botões de Microajustes */}
+                             <div className="pt-3 flex items-center justify-between gap-4 border-t border-zinc-200/50">
+                               <div className="flex items-center gap-1.5">
+                                 <button 
+                                   onClick={() => setData(prev => ({ ...prev, photoX: prev.photoX - 5 }))}
+                                   title="Mover 5px para esquerda"
+                                   className="w-8 h-8 rounded-lg bg-white border border-zinc-250 flex items-center justify-center text-xs font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                 >
+                                   ◀
+                                 </button>
+                                 <div className="flex flex-col gap-0.5">
+                                   <button 
+                                     onClick={() => setData(prev => ({ ...prev, photoY: prev.photoY - 5 }))}
+                                     title="Mover 5px para cima"
+                                     className="w-8 h-4 rounded-t-lg bg-white border border-zinc-250 flex items-center justify-center text-[8px] font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                   >
+                                     ▲
+                                   </button>
+                                   <button 
+                                     onClick={() => setData(prev => ({ ...prev, photoY: prev.photoY + 5 }))}
+                                     title="Mover 5px para baixo"
+                                     className="w-8 h-4 rounded-b-lg bg-white border-b border-x border-zinc-250 flex items-center justify-center text-[8px] font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                   >
+                                     ▼
+                                   </button>
+                                 </div>
+                                 <button 
+                                   onClick={() => setData(prev => ({ ...prev, photoX: prev.photoX + 5 }))}
+                                   title="Mover 5px para direita"
+                                   className="w-8 h-8 rounded-lg bg-white border border-zinc-250 flex items-center justify-center text-xs font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                  >
+                                    ▶
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                  <button 
+                                    onClick={() => setData(prev => ({ ...prev, photoScale: Math.max(0.1, prev.photoScale - 0.05) }))}
+                                    title="Diminuir 5%"
+                                    className="w-8 h-8 rounded-lg bg-white border border-zinc-250 flex items-center justify-center text-lg font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                  >
+                                    -
+                                  </button>
+                                  <button 
+                                    onClick={() => setData(prev => ({ ...prev, photoScale: Math.min(4.0, prev.photoScale + 0.05) }))}
+                                    title="Aumentar 5%"
+                                    className="w-8 h-8 rounded-lg bg-white border border-zinc-250 flex items-center justify-center text-lg font-bold text-zinc-650 hover:bg-zinc-50 hover:border-zinc-400 active:scale-95 transition-all shadow-sm"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
+                                <button 
+                                  onClick={() => setData(prev => ({ ...prev, photoX: 0, photoY: 0, photoScale: 1 }))}
+                                  className="px-3 h-8 text-[9px] font-black uppercase tracking-widest bg-white border border-zinc-250 text-zinc-500 hover:text-red-500 hover:border-red-200 rounded-lg transition-all shadow-sm flex items-center justify-center"
+                                >
+                                  Limpar
+                                </button>
+                              </div>
+                              
+                              <p className="text-[9px] text-zinc-400 text-center italic leading-none pt-1">
+                                Dica: Você também pode clicar e arrastar a foto diretamente no banner!
+                              </p>
+                            </div>
+                          </div>
+                        )}
                     
                     <div className="pt-6 border-t border-zinc-100 space-y-8">
                       <div>
@@ -1591,83 +1716,9 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    
-                    {data.photo && (
-                      <div className="space-y-4 p-5 bg-zinc-50 rounded-3xl border border-zinc-100 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Ajustes da Imagem</span>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {/* Zoom */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase">Zoom</label>
-                              <span className="text-[10px] font-bold text-blue-600">{Math.round(data.photoScale * 100)}%</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0.1" 
-                              max="4" 
-                              step="0.01" 
-                              value={data.photoScale} 
-                              onChange={(e) => setData(prev => ({ ...prev, photoScale: parseFloat(e.target.value) }))}
-                              className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-blue-600"
-                            />
-                          </div>
-
-                          {/* Horizontal */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase">Horizontal (X)</label>
-                              <span className="text-[10px] font-bold text-zinc-500">{Math.round(data.photoX)}px</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="-300" 
-                              max="300" 
-                              step="1" 
-                              value={data.photoX} 
-                              onChange={(e) => setData(prev => ({ ...prev, photoX: parseFloat(e.target.value) }))}
-                              className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
-                            />
-                          </div>
-
-                          {/* Vertical */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase">Vertical (Y)</label>
-                              <span className="text-[10px] font-bold text-zinc-500">{Math.round(data.photoY)}px</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="-300" 
-                              max="300" 
-                              step="1" 
-                              value={data.photoY} 
-                              onChange={(e) => setData(prev => ({ ...prev, photoY: parseFloat(e.target.value) }))}
-                              className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="pt-2">
-                          <button 
-                            onClick={() => setData(prev => ({ ...prev, photoX: 0, photoY: 0, photoScale: 1 }))}
-                            className="w-full text-[10px] font-black uppercase tracking-widest py-3 bg-white border border-zinc-200 text-zinc-500 rounded-xl hover:bg-zinc-100 hover:text-zinc-700 transition-all shadow-sm"
-                          >
-                            Resetar Posição
-                          </button>
-                        </div>
-                        
-                        <p className="text-[9px] text-zinc-400 text-center italic mt-2">
-                          Você também pode clicar e arrastar a foto no banner
-                        </p>
-                      </div>
-                    )}
                   </div>
-                </section>
+                </div>
+              </section>
               </div>
             </div>
           </div>
