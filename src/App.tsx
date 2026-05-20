@@ -1681,7 +1681,7 @@ export default function App() {
               <span className="absolute -top-10 left-0 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Visualização Direta (WYSIWYG)</span>
               
               <div 
-                className="bg-white rounded-sm shadow-2xl transition-all duration-300 transform border border-zinc-100 overflow-hidden"
+                className="w-full max-w-[900px] bg-white rounded-sm shadow-2xl transition-all duration-300 transform border border-zinc-100 overflow-hidden"
               >
                 <SignatureCanvas 
                   data={data} 
@@ -2372,7 +2372,7 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full overflow-hidden">
       <canvas 
         id="signature-canvas"
         ref={canvasRef} 
@@ -2380,7 +2380,7 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
         height={252} 
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        className="block"
+        className="block w-full h-auto max-w-full aspect-[900/252]"
       />
     </div>
   );
