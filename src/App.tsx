@@ -125,6 +125,64 @@ const DEFAULT_DATA: SignatureData = {
   photoBgColor: '#f4f4f5'
 };
 
+function convertCloudImageUrl(url: string | null | undefined): string | null {
+  if (!url || typeof url !== 'string') return url ?? null;
+  const trimmedUrl = url.trim();
+
+  // 1. Google Drive
+  const gdRegex1 = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i;
+  const gdRegex2 = /(?:drive|docs)\.google\.com\/.*[?&]id=([a-zA-Z0-9_-]+)/i;
+
+  let fileId: string | null = null;
+  const m1 = trimmedUrl.match(gdRegex1);
+  const m2 = trimmedUrl.match(gdRegex2);
+
+  if (m1) {
+    fileId = m1[1];
+  } else if (m2) {
+    fileId = m2[1];
+  }
+
+  if (fileId) {
+    return `https://docs.google.com/uc?export=download&id=${fileId}`;
+  }
+
+  // 2. OneDrive
+  if (trimmedUrl.includes('onedrive.live.com')) {
+    if (trimmedUrl.includes('redir?')) {
+      return trimmedUrl.replace('redir?', 'download?');
+    }
+    if (trimmedUrl.includes('embed?')) {
+      return trimmedUrl.replace('embed?', 'download?');
+    }
+    try {
+      const urlObj = new URL(trimmedUrl);
+      const resid = urlObj.searchParams.get('resid');
+      const authkey = urlObj.searchParams.get('authkey');
+      if (resid) {
+        let downloadUrl = `https://onedrive.live.com/download?resid=${resid}`;
+        if (authkey) downloadUrl += `&authkey=${authkey}`;
+        return downloadUrl;
+      }
+    } catch (e) {
+      // ignore parsing error
+    }
+  }
+
+  // 3. Dropbox
+  if (trimmedUrl.includes('dropbox.com')) {
+    if (trimmedUrl.includes('dl=0')) {
+      return trimmedUrl.replace('dl=0', 'raw=1');
+    }
+    if (!trimmedUrl.includes('raw=1') && !trimmedUrl.includes('dl=1')) {
+      const separator = trimmedUrl.includes('?') ? '&' : '?';
+      return trimmedUrl + separator + 'raw=1';
+    }
+  }
+
+  return trimmedUrl;
+}
+
 export default function App() {
   const [activeLayout, setActiveLayout] = useState<LayoutType>('farmacon');
   const [brandLogos, setBrandLogos] = useState<Record<LayoutType, string | null>>(() => {
@@ -395,7 +453,7 @@ export default function App() {
           website: row['Website / Link'] ? String(row['Website / Link']) : '',
           location: row['Username / Instagram'] ? String(row['Username / Instagram']) : '',
           layout: String(row['Modelo (farmacon, pets, rxanalises, coomarcas, mercaddo, integree)'] || 'farmacon').toLowerCase().trim() as LayoutType,
-          photo: row['URL da Foto (opcional)'] ? String(row['URL da Foto (opcional)']) : null,
+          photo: row['URL da Foto (opcional)'] ? convertCloudImageUrl(String(row['URL da Foto (opcional)'])) : null,
                     brandLogo: brandLogos[String(row['Modelo (farmacon, pets, rxanalises, coomarcas, mercaddo, integree)'] || 'farmacon').toLowerCase().trim() as LayoutType],
           secondaryLogo: secondaryLogos[String(row['Modelo (farmacon, pets, rxanalises, coomarcas, mercaddo, integree)'] || 'farmacon').toLowerCase().trim() as LayoutType],
           photoX: 0,
@@ -1035,11 +1093,30 @@ export default function App() {
                           value={data.photo && data.photo.startsWith('http') ? data.photo : ''}
                           onChange={(e) => {
                             setPhotoError(false);
-                            setData(prev => ({ ...prev, photo: e.target.value }));
+                            const converted = convertCloudImageUrl(e.target.value);
+                            setData(prev => ({ ...prev, photo: converted }));
                           }}
                           className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-3 text-sm font-medium outline-none focus:border-blue-500 transition-all shadow-inner"
                         />
                        </div>
+
+                       {data.photo && (
+                         data.photo.includes('docs.google.com/uc') || 
+                         data.photo.includes('onedrive.live.com/download') || 
+                         (data.photo.includes('dropbox.com') && data.photo.includes('raw=1'))
+                       ) && (
+                         <div className="bg-emerald-50 border border-emerald-100 p-3.5 rounded-2xl flex gap-2.5 items-center">
+                           <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                             <Check className="w-3.5 h-3.5 text-white" />
+                           </div>
+                           <div className="flex-1">
+                             <p className="text-[10px] text-emerald-950 font-black uppercase tracking-wider leading-none mb-0.5">Link Convertido!</p>
+                             <p className="text-[9px] text-emerald-800 leading-normal font-medium">
+                               Detectamos um link de serviço de nuvem e o convertemos automaticamente para carregamento direto.
+                             </p>
+                           </div>
+                         </div>
+                       )}
 
                        <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3">
                           <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
