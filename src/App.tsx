@@ -180,14 +180,34 @@ function convertCloudImageUrl(url: string | null | undefined): string | null {
     }
   }
 
-  // 4. SharePoint & OneDrive for Business
-  if (trimmedUrl.includes('sharepoint.com')) {
-    let spUrl = trimmedUrl;
-    
-    // Convert short sharing links (e.g., :i:/g/ -> :i:/d/, :u:/g/ -> :u:/d/, :i:/s/ -> :i:/d/, :i:/r/ -> :i:/d/)
-    if (/(\/:[a-z]:)\/[grs]\//i.test(spUrl)) {
-      spUrl = spUrl.replace(/(\/:[a-z]:)\/[grs]\//gi, '$1/d/');
+  // 4. SharePoint & OneDrive for Business (handles modern short links and classic sharing URLs)
+  if (
+    trimmedUrl.includes('sharepoint.com') ||
+    trimmedUrl.includes('_layouts/15/') ||
+    trimmedUrl.includes('onedrive.aspx') ||
+    trimmedUrl.includes('Doc.aspx') ||
+    /(\/:[a-zA-Z]:)\/[a-zA-Z]\//gi.test(trimmedUrl)
+  ) {
+    const spShortPattern = /https?:\/\/([^/]+)\/(?::[a-zA-Z]:)\/[a-zA-Z]\/(.+)\/([^/?#]+)/i;
+    const match = trimmedUrl.match(spShortPattern);
+    if (match) {
+      const host = match[1];
+      const sitePath = match[2];
+      const token = match[3];
+
+      let eParam = "";
+      try {
+        const urlObj = new URL(trimmedUrl);
+        const e = urlObj.searchParams.get("e");
+        if (e) eParam = `&e=${e}`;
+      } catch (err) {
+        // ignore
+      }
+
+      return `https://${host}/${sitePath}/_layouts/15/download.aspx?share=${token}${eParam}`;
     }
+
+    let spUrl = trimmedUrl;
     
     // Replace onedrive.aspx viewer with download.aspx to bypass the preview page and get the direct image byte stream
     if (spUrl.includes('onedrive.aspx')) {
@@ -199,8 +219,7 @@ function convertCloudImageUrl(url: string | null | undefined): string | null {
       spUrl = spUrl.replace(/Doc\.aspx/gi, 'download.aspx');
     }
 
-    // Force download parameter if not already present
-    if (!spUrl.includes('download=1') && !spUrl.includes('/:i:/d/') && !spUrl.includes('/:u:/d/') && !spUrl.includes('/:b:/d/') && !spUrl.includes('/:v:/d/') && !spUrl.includes('/:f:/d/')) {
+    if (!spUrl.includes('download=1')) {
       const separator = spUrl.includes('?') ? '&' : '?';
       spUrl = spUrl + separator + 'download=1';
     }
@@ -216,7 +235,8 @@ function getLoadedImageUrl(url: string | null | undefined): string {
   if (url.startsWith('data:') || url.startsWith('/') || url.startsWith('blob:')) {
     return url;
   }
-  return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  const directUrl = convertCloudImageUrl(url) || url;
+  return `/api/proxy-image?url=${encodeURIComponent(directUrl)}`;
 }
 
 export default function App() {
