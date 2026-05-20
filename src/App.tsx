@@ -183,6 +183,14 @@ function convertCloudImageUrl(url: string | null | undefined): string | null {
   return trimmedUrl;
 }
 
+function getLoadedImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('data:') || url.startsWith('/') || url.startsWith('blob:')) {
+    return url;
+  }
+  return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+}
+
 export default function App() {
   const [activeLayout, setActiveLayout] = useState<LayoutType>('farmacon');
   const [brandLogos, setBrandLogos] = useState<Record<LayoutType, string | null>>(() => {
@@ -533,7 +541,7 @@ export default function App() {
             img.crossOrigin = "anonymous";
             img.onload = () => res(img);
             img.onerror = () => res(null);
-            img.src = src;
+            img.src = getLoadedImageUrl(src);
           });
         };
 
@@ -1064,7 +1072,7 @@ export default function App() {
                       <div className="w-20 h-20 rounded-full bg-white border border-zinc-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform overflow-hidden shadow-sm relative">
                         {data.photo ? (
                           <img 
-                            src={data.photo} 
+                            src={getLoadedImageUrl(data.photo)} 
                             alt="Preview" 
                             className="w-full h-full object-cover" 
                             onError={() => setPhotoError(true)}
@@ -2155,7 +2163,7 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
         img.crossOrigin = "anonymous";
         img.onload = () => resolve(img);
         img.onerror = () => resolve(null);
-        img.src = src;
+        img.src = getLoadedImageUrl(src);
       });
     };
 
