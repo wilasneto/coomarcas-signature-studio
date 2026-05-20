@@ -239,16 +239,56 @@ function getLoadedImageUrl(url: string | null | undefined): string {
   return `/api/proxy-image?url=${encodeURIComponent(directUrl)}`;
 }
 
+const DEFAULT_COOMARCAS_LOGO = "data:image/svg+xml;utf8," + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 435 100" width="435" height="100">
+    <defs>
+      <linearGradient id="infGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#2563eb" />
+        <stop offset="35%" stop-color="#3b82f6" />
+        <stop offset="70%" stop-color="#60a5fa" />
+        <stop offset="100%" stop-color="#2563eb" />
+      </linearGradient>
+    </defs>
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 44 26 L 22 26 C 14 26 8 32 8 50 C 8 68 14 74 22 74 L 44 74" stroke="#000000" stroke-width="11" />
+      <path d="M 100 50 C 112 30, 136 30, 146 50 C 136 70, 112 70, 100 50 C 88 30, 64 30, 54 50 C 64 70, 88 70, 100 50 Z" stroke="url(#infGrad)" stroke-width="14" />
+      <path d="M 160 74 L 160 26 L 180 50 L 200 26 L 200 74" stroke="#000000" stroke-width="11" />
+      <path d="M 214 74 L 228 26 L 242 74" stroke="#000000" stroke-width="11" />
+      <path d="M 256 74 L 256 26 L 274 26 C 283 26 289 31 289 40 C 289 49 283 53 274 53 L 256 53 M 274 53 L 289 74" stroke="#000000" stroke-width="11" />
+      <path d="M 334 26 L 312 26 C 304 26 298 32 298 50 C 298 68 304 74 312 74 L 334 74" stroke="#000000" stroke-width="11" />
+      <path d="M 348 74 L 362 26 L 376 74" stroke="#000000" stroke-width="11" />
+      <path d="M 422 34 C 422 28, 417 26, 408 26 C 399 26, 394 29, 394 35 C 394 44, 424 42, 424 57 C 424 67, 415 74, 406 74 C 397 74, 392 70, 392 65" stroke="#000000" stroke-width="11" />
+    </g>
+  </svg>`
+);
+
 export default function App() {
-  const [activeLayout, setActiveLayout] = useState<LayoutType>('farmacon');
+  const [activeLayout, setActiveLayout] = useState<LayoutType>('coomarcas');
   const [brandLogos, setBrandLogos] = useState<Record<LayoutType, string | null>>(() => {
     try {
       const saved = localStorage.getItem('signature_brand_logos');
-      return saved ? JSON.parse(saved) : {
-        farmacon: null, pets: null, rxanalises: null, coomarcas: null, mercaddo: null, integree: null
+      const parsed = saved ? JSON.parse(saved) : {};
+      let coomarcasLogo = parsed.coomarcas || null;
+      if (coomarcasLogo === DEFAULT_COOMARCAS_LOGO) {
+        coomarcasLogo = null;
+      }
+      return {
+        farmacon: parsed.farmacon || null,
+        pets: parsed.pets || null,
+        rxanalises: parsed.rxanalises || null,
+        coomarcas: coomarcasLogo,
+        mercaddo: parsed.mercaddo || null,
+        integree: parsed.integree || null
       };
     } catch (e) {
-      return { farmacon: null, pets: null, rxanalises: null, coomarcas: null, mercaddo: null, integree: null };
+      return {
+        farmacon: null,
+        pets: null,
+        rxanalises: null,
+        coomarcas: null,
+        mercaddo: null,
+        integree: null
+      };
     }
   });
 
@@ -297,9 +337,9 @@ export default function App() {
 
   const [data, setData] = useState<SignatureData>({
     ...DEFAULT_DATA,
-    brandLogo: brandLogos['farmacon'],
-    secondaryLogo: secondaryLogos['farmacon'],
-    socialVisibility: socialVisibilities['farmacon'],
+    brandLogo: brandLogos['coomarcas'],
+    secondaryLogo: secondaryLogos['coomarcas'],
+    socialVisibility: socialVisibilities['coomarcas'] || DEFAULT_DATA.socialVisibility,
     coomarcasSubLogos: coomarcasGlobalSubLogos
   });
 
