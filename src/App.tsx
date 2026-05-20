@@ -25,12 +25,14 @@ import {
   CheckCircle2,
   AlertCircle,
   FileDown,
-  Plus
+  Plus,
+  Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
+import { ImageEditorSection } from './components/ImageEditorSection';
 
-interface SignatureData {
+export interface SignatureData {
   name: string;
   role: string;
   company: string;
@@ -78,7 +80,7 @@ interface SignatureData {
   photoBgColor?: string;
 }
 
-type LayoutType = 'farmacon' | 'pets' | 'rxanalises' | 'coomarcas' | 'mercaddo' | 'integree';
+export type LayoutType = 'farmacon' | 'pets' | 'rxanalises' | 'coomarcas' | 'mercaddo' | 'integree';
 
 const DEFAULT_DATA: SignatureData = {
   name: 'Guilherme Batista',
@@ -966,6 +968,32 @@ export default function App() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-zinc-500 ml-1 uppercase tracking-wider">Website / Link</label>
                       <input name="website" value={data.website} onChange={handleInputChange} className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-4 text-base font-medium outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all" />
+                    </div>
+
+                    {/* Bloco de inserção e edição de imagens posicionado logo abaixo do Website/Link */}
+                    <div className="border-t border-zinc-200/50 pt-6">
+                      <ImageEditorSection 
+                        data={data}
+                        setData={setData}
+                        activeLayout={activeLayout}
+                        brandLogos={brandLogos}
+                        setBrandLogos={setBrandLogos}
+                        secondaryLogos={secondaryLogos}
+                        setSecondaryLogos={setSecondaryLogos}
+                        setCoomarcasGlobalSubLogos={setCoomarcasGlobalSubLogos}
+                        convertCloudImageUrl={convertCloudImageUrl}
+                        getLoadedImageUrl={getLoadedImageUrl}
+                        handlePhotoUpload={handlePhotoUpload}
+                        handleBrandLogoUpload={handleBrandLogoUpload}
+                        handleSecondaryLogoUpload={handleSecondaryLogoUpload}
+                        handleCoomarcasSubLogoUpload={handleCoomarcasSubLogoUpload}
+                        photoError={photoError}
+                        setPhotoError={setPhotoError}
+                        logoError={logoError}
+                        setLogoError={setLogoError}
+                        secLogoError={secLogoError}
+                        setSecLogoError={setSecLogoError}
+                      />
                     </div>
                     
                     {/* Controle para Modificar as Cores dos Ícones de Contato */}
@@ -2474,7 +2502,11 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
     if (!canvas) return;
     const target = getDragTarget(e.clientX, e.clientY);
     if (target) {
-      canvas.style.cursor = 'grab';
+      if (target === 'photo') {
+        canvas.style.cursor = 'pointer';
+      } else {
+        canvas.style.cursor = 'grab';
+      }
     } else {
       canvas.style.cursor = 'default';
     }
@@ -2499,23 +2531,29 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
     const initialSubX = [...(data.coomarcasSubLogosX || [0, 0, 0, 0])];
     const initialSubY = [...(data.coomarcasSubLogosY || [0, 0, 0, 0])];
 
+    let hasDragged = false;
+
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
 
-      if (target === 'photo') {
+      if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+        hasDragged = true;
+      }
+
+      if (target === 'photo' && data.photo) {
         setData(prev => ({
           ...prev,
           photoX: initialPhotoX + deltaX,
           photoY: initialPhotoY + deltaY
         }));
-      } else if (target === 'brandLogo') {
+      } else if (target === 'brandLogo' && (data.brandLogo || brandLogos[activeLayout])) {
         setData(prev => ({
           ...prev,
           logoX: initialLogoX + deltaX,
           logoY: initialLogoY + deltaY
         }));
-      } else if (target === 'secondaryLogo') {
+      } else if (target === 'secondaryLogo' && (data.secondaryLogo || secondaryLogos[activeLayout])) {
         setData(prev => ({
           ...prev,
           secLogoX: initialSecLogoX + deltaX,
@@ -2538,10 +2576,19 @@ const SignatureCanvas = ({ data, setData, activeLayout, brandLogos, secondaryLog
     const onMouseUp = () => {
       if (canvas) {
         const currentTarget = getDragTarget(startX, startY);
-        canvas.style.cursor = currentTarget ? 'grab' : 'default';
+        canvas.style.cursor = currentTarget ? (currentTarget === 'photo' ? 'pointer' : 'grab') : 'default';
       }
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+
+      if (!hasDragged) {
+        if (target === 'photo') {
+          const fileInput = document.getElementById('profile-photo-input');
+          if (fileInput) {
+            fileInput.click();
+          }
+        }
+      }
     };
 
     document.addEventListener('mousemove', onMouseMove);
