@@ -5,7 +5,8 @@ import {
   Check, 
   RefreshCw,
   Plus,
-  AlertCircle
+  AlertCircle,
+  List
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { SignatureData, LayoutType } from '../App';
@@ -22,6 +23,10 @@ interface ImageEditorSectionProps {
   setSecLogoError: (val: boolean) => void;
   setBrandLogos: React.Dispatch<React.SetStateAction<Record<LayoutType, string | null>>>;
   setSecondaryLogos: React.Dispatch<React.SetStateAction<Record<LayoutType, string | null>>>;
+  contactIconBgColors: Record<LayoutType, string | undefined>;
+  setContactIconBgColors: React.Dispatch<React.SetStateAction<Record<LayoutType, string | undefined>>>;
+  contactIconColors: Record<LayoutType, string | undefined>;
+  setContactIconColors: React.Dispatch<React.SetStateAction<Record<LayoutType, string | undefined>>>;
   setCoomarcasGlobalSubLogos: (val: (string | null)[]) => void;
   handlePhotoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleBrandLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -44,6 +49,10 @@ export const ImageEditorSection: React.FC<ImageEditorSectionProps> = ({
   setSecLogoError,
   setBrandLogos,
   setSecondaryLogos,
+  contactIconBgColors,
+  setContactIconBgColors,
+  contactIconColors,
+  setContactIconColors,
   setCoomarcasGlobalSubLogos,
   handlePhotoUpload,
   handleBrandLogoUpload,
@@ -208,6 +217,80 @@ export const ImageEditorSection: React.FC<ImageEditorSectionProps> = ({
             )}
           </div>
 
+          <div className="pt-4 border-t border-zinc-200/50 space-y-4">
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Cores dos Ícones de Contato</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Fundo (Círculo)</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-10 h-10 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
+                    <input 
+                      type="color" 
+                      value={contactIconBgColors[activeLayout] || currentStyles.accent} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setContactIconBgColors(prev => ({ ...prev, [activeLayout]: val }));
+                        setData(prev => ({ ...prev, contactIconBgColor: val }));
+                      }}
+                      className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
+                    />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={contactIconBgColors[activeLayout] || ''} 
+                    placeholder={currentStyles.accent}
+                    onChange={(e) => {
+                      const val = e.target.value || undefined;
+                      setContactIconBgColors(prev => ({ ...prev, [activeLayout]: val }));
+                      setData(prev => ({ ...prev, contactIconBgColor: val }));
+                    }} 
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 uppercase"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Símbolo (Desenho)</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-10 h-10 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
+                    <input 
+                      type="color" 
+                      value={contactIconColors[activeLayout] || '#ffffff'} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setContactIconColors(prev => ({ ...prev, [activeLayout]: val }));
+                        setData(prev => ({ ...prev, contactIconColor: val }));
+                      }}
+                      className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
+                    />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={contactIconColors[activeLayout] || ''} 
+                    placeholder="#ffffff"
+                    onChange={(e) => {
+                      const val = e.target.value || undefined;
+                      setContactIconColors(prev => ({ ...prev, [activeLayout]: val }));
+                      setData(prev => ({ ...prev, contactIconColor: val }));
+                    }}
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+            {(contactIconBgColors[activeLayout] || contactIconColors[activeLayout]) && (
+              <button 
+                onClick={() => {
+                  setContactIconBgColors(prev => ({ ...prev, [activeLayout]: undefined }));
+                  setContactIconColors(prev => ({ ...prev, [activeLayout]: undefined }));
+                  setData(prev => ({ ...prev, contactIconBgColor: undefined, contactIconColor: undefined }));
+                }}
+                className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest block ml-1 transition-colors"
+              >
+                Limpar Cores Personalizadas
+              </button>
+            )}
+          </div>
+
           {data.photo && (
             <div 
               id="photo-adjustment-controls" 
@@ -322,9 +405,21 @@ export const ImageEditorSection: React.FC<ImageEditorSectionProps> = ({
 
                   <button 
                     onClick={() => setData(prev => ({ ...prev, photoX: 0, photoY: 0, photoScale: 1 }))}
-                    className="px-3 h-8 text-[9px] font-black uppercase tracking-widest bg-white border border-zinc-250 text-zinc-500 hover:text-red-500 hover:border-red-200 rounded-lg transition-all shadow-sm flex items-center justify-center"
+                    className="px-3 h-8 text-[9px] font-black uppercase tracking-widest bg-white border border-zinc-200 text-zinc-500 hover:text-red-500 hover:border-red-200 rounded-lg transition-all shadow-sm flex items-center justify-center"
                   >
                     Limpar
+                  </button>
+                  <button
+                    onClick={() => {
+                        const el = document.getElementById('batch-list');
+                        if (el) {
+                           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }}
+                    title="Retornar para o registro selecionado"
+                    className="w-8 h-8 rounded-lg bg-white border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 hover:border-blue-400 active:scale-95 transition-all shadow-sm"
+                  >
+                    <List className="w-4 h-4 text-zinc-500" />
                   </button>
                 </div>
                 

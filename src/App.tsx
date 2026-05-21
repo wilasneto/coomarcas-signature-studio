@@ -26,7 +26,8 @@ import {
   AlertCircle,
   FileDown,
   Plus,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -80,7 +81,7 @@ export interface SignatureData {
   photoBgColor?: string;
 }
 
-export type LayoutType = 'farmacon' | 'pets' | 'rxanalises' | 'coomarcas' | 'mercaddo' | 'integree';
+export type LayoutType = string;
 
 const DEFAULT_DATA: SignatureData = {
   name: 'Guilherme Batista',
@@ -266,10 +267,99 @@ const DEFAULT_COOMARCAS_LOGO = "data:image/svg+xml;utf8," + encodeURIComponent(
 
 export default function App() {
   const [activeLayout, setActiveLayout] = useState<LayoutType>('coomarcas');
+  const [customLayouts, setCustomLayouts] = useState<string[]>([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newLayoutName, setNewLayoutName] = useState('');
+  const [baseLayout, setBaseLayout] = useState('coomarcas');
+
+  const addLayout = () => {
+    setIsModalOpen(true);
+  };
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  
+  const [contactIconBgColors, setContactIconBgColors] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_contact_icon_bg_colors');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const [contactIconColors, setContactIconColors] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_contact_icon_colors');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const [leftBgTypes, setLeftBgTypes] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_left_bg_types');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const [leftBgColors, setLeftBgColors] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_left_bg_colors');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const [leftBgGradients1, setLeftBgGradients1] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_left_bg_gradients1');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const [leftBgGradients2, setLeftBgGradients2] = useState<Record<LayoutType, string | undefined>>(() => {
+    try {
+      const saved = localStorage.getItem('signature_left_bg_gradients2');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const deleteLayout = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteLayout = () => {
+    if (deletePassword === 'mkt@2026') {
+      setCustomLayouts(prev => prev.filter(l => l !== activeLayout));
+      setActiveLayout('coomarcas');
+      setDeletePassword('');
+      setIsDeleteModalOpen(false);
+    } else {
+      alert('Senha incorreta!');
+    }
+  };
+
+  const confirmAddLayout = () => {
+    if (newLayoutName && !customLayouts.includes(newLayoutName)) {
+      setCustomLayouts(prev => [...prev, newLayoutName]);
+      
+      // Copy configuration from baseLayout to newLayoutName
+      setBrandLogos(prev => ({ ...prev, [newLayoutName]: prev[baseLayout] }));
+      setSecondaryLogos(prev => ({ ...prev, [newLayoutName]: prev[baseLayout] }));
+      setSocialVisibilities(prev => ({ ...prev, [newLayoutName]: prev[baseLayout] }));
+      
+      setActiveLayout(newLayoutName);
+      setNewLayoutName('');
+      setIsModalOpen(false);
+    } else {
+      alert("Nome inválido ou já existente!");
+    }
+  };
+
   const [brandLogos, setBrandLogos] = useState<Record<LayoutType, string | null>>(() => {
     try {
       const saved = localStorage.getItem('signature_brand_logos');
       const parsed = saved ? JSON.parse(saved) : {};
+      
+      // Need to handle if the default logo string matches
       let coomarcasLogo = parsed.coomarcas || null;
       if (coomarcasLogo === DEFAULT_COOMARCAS_LOGO) {
         coomarcasLogo = null;
@@ -280,7 +370,8 @@ export default function App() {
         rxanalises: parsed.rxanalises || null,
         coomarcas: coomarcasLogo,
         mercaddo: parsed.mercaddo || null,
-        integree: parsed.integree || null
+        integree: parsed.integree || null,
+        ...parsed
       };
     } catch (e) {
       return {
@@ -290,7 +381,7 @@ export default function App() {
         coomarcas: null,
         mercaddo: null,
         integree: null
-      };
+      } as any;
     }
   });
 
@@ -362,18 +453,47 @@ export default function App() {
     localStorage.setItem('signature_coomarcas_sub_logos', JSON.stringify(coomarcasGlobalSubLogos));
   }, [coomarcasGlobalSubLogos]);
 
+  React.useEffect(() => {
+    localStorage.setItem('signature_contact_icon_bg_colors', JSON.stringify(contactIconBgColors));
+  }, [contactIconBgColors]);
+  
+  React.useEffect(() => {
+    localStorage.setItem('signature_contact_icon_colors', JSON.stringify(contactIconColors));
+  }, [contactIconColors]);
+
+  React.useEffect(() => {
+    localStorage.setItem('signature_left_bg_types', JSON.stringify(leftBgTypes));
+    localStorage.setItem('signature_left_bg_colors', JSON.stringify(leftBgColors));
+    localStorage.setItem('signature_left_bg_gradients1', JSON.stringify(leftBgGradients1));
+    localStorage.setItem('signature_left_bg_gradients2', JSON.stringify(leftBgGradients2));
+  }, [leftBgTypes, leftBgColors, leftBgGradients1, leftBgGradients2]);
+
   // Sincronizar logotipo, visibilidade social e sub-logotipos quando a marca muda
   React.useEffect(() => {
-    setData(prev => ({ 
-      ...prev, 
-      brandLogo: brandLogos[activeLayout],
-      secondaryLogo: secondaryLogos[activeLayout],
-      socialVisibility: socialVisibilities[activeLayout] || DEFAULT_DATA.socialVisibility,
-      coomarcasSubLogos: activeLayout === 'coomarcas' 
-        ? (prev.coomarcasSubLogos || coomarcasGlobalSubLogos) 
-        : (prev.coomarcasSubLogos || [null, null, null, null])
-    }));
-  }, [activeLayout, brandLogos, secondaryLogos, socialVisibilities, coomarcasGlobalSubLogos]);
+    setData(prev => {
+      const nextData = {
+        ...prev, 
+        brandLogo: brandLogos[activeLayout],
+        secondaryLogo: secondaryLogos[activeLayout],
+        contactIconBgColor: contactIconBgColors[activeLayout],
+        contactIconColor: contactIconColors[activeLayout],
+        leftBgType: leftBgTypes[activeLayout],
+        leftBgColor: leftBgColors[activeLayout],
+        leftBgGradient1: leftBgGradients1[activeLayout],
+        leftBgGradient2: leftBgGradients2[activeLayout],
+        socialVisibility: socialVisibilities[activeLayout] || DEFAULT_DATA.socialVisibility,
+        coomarcasSubLogos: activeLayout === 'coomarcas' 
+          ? (prev.coomarcasSubLogos || coomarcasGlobalSubLogos) 
+          : (prev.coomarcasSubLogos || [null, null, null, null])
+      };
+      
+      // Prevent unnecessary state updates if data is effectively unchanged
+      if (JSON.stringify(prev) === JSON.stringify(nextData)) {
+        return prev;
+      }
+      return nextData;
+    });
+  }, [activeLayout, brandLogos, secondaryLogos, socialVisibilities, coomarcasGlobalSubLogos, contactIconBgColors, contactIconColors, leftBgTypes, leftBgColors, leftBgGradients1, leftBgGradients2]);
 
   const [isExporting, setIsExporting] = useState(false);
   const [bulkData, setBulkData] = useState<SignatureData[]>([]);
@@ -387,11 +507,14 @@ export default function App() {
     if (selectedBatchIndex >= 0) {
       setBulkData(prev => {
         const updated = [...prev];
+        // Create a deep copy of the newData to ensure complete independence
+        const independentData = JSON.parse(JSON.stringify(newData));
+        
         // Evita atualizações desnecessárias se os dados forem idênticos
-        if (JSON.stringify(updated[selectedBatchIndex]) === JSON.stringify(newData)) {
+        if (JSON.stringify(updated[selectedBatchIndex]) === JSON.stringify(independentData)) {
           return prev;
         }
-        updated[selectedBatchIndex] = newData;
+        updated[selectedBatchIndex] = independentData;
         return updated;
       });
     }
@@ -751,7 +874,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-4 mt-6 md:mt-0">
             <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">Layout</label>
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
               <select 
                 value={activeLayout}
                 onChange={(e) => setActiveLayout(e.target.value as LayoutType)}
@@ -764,11 +887,76 @@ export default function App() {
                 <option value="coomarcas">Coomarcas</option>
                 <option value="mercaddo">Mercaddo</option>
                 <option value="integree">Integree</option>
+                {customLayouts.map(l => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
               </select>
-              <ChevronDown className="w-5 h-5 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-5 h-5 text-zinc-400 absolute right-12 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <button onClick={addLayout} className="p-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl">
+                <Plus className="w-5 h-5 text-zinc-600" />
+              </button>
+              {customLayouts.includes(activeLayout) && (
+                <button onClick={deleteLayout} className="p-3 bg-red-100 hover:bg-red-200 rounded-xl">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-sm space-y-6 shadow-2xl">
+              <h3 className="text-lg font-bold text-zinc-800">Criar Novo Layout</h3>
+              <div className="space-y-4">
+                <input 
+                  value={newLayoutName} 
+                  onChange={e => setNewLayoutName(e.target.value)}
+                  placeholder="Nome do novo layout"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-3 text-sm font-medium outline-none focus:border-blue-500 transition-all"
+                />
+                <select 
+                  value={baseLayout}
+                  onChange={e => setBaseLayout(e.target.value)}
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-3 text-sm font-medium outline-none focus:border-blue-500 transition-all"
+                >
+                  <option value="farmacon">Base: Farmacon</option>
+                  <option value="pets">Base: Pets</option>
+                  <option value="rxanalises">Base: Rx Análises</option>
+                  <option value="coomarcas">Base: Coomarcas</option>
+                  <option value="mercaddo">Base: Mercaddo</option>
+                  <option value="integree">Base: Integree</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button onClick={() => setIsModalOpen(false)} className="px-5 py-2 text-zinc-500 font-bold hover:text-zinc-700 uppercase tracking-widest text-xs">Cancelar</button>
+                <button onClick={confirmAddLayout} className="px-5 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 uppercase tracking-widest text-xs shadow-md active:scale-95 transition-all">Criar</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-sm space-y-6 shadow-2xl">
+              <h3 className="text-lg font-bold text-zinc-800">Excluir Layout</h3>
+              <p className="text-sm text-zinc-600">Tem certeza que deseja excluir o layout "{activeLayout}"? Esta ação é irreversível.</p>
+              <div className="space-y-4">
+                <input 
+                  type="password"
+                  value={deletePassword} 
+                  onChange={e => setDeletePassword(e.target.value)}
+                  placeholder="Senha de administrador"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-3 text-sm font-medium outline-none focus:border-red-500 transition-all"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button onClick={() => setIsDeleteModalOpen(false)} className="px-5 py-2 text-zinc-500 font-bold hover:text-zinc-700 uppercase tracking-widest text-xs">Cancelar</button>
+                <button onClick={confirmDeleteLayout} className="px-5 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 uppercase tracking-widest text-xs shadow-md active:scale-95 transition-all">Excluir</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action & Main Content Area */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -859,7 +1047,7 @@ export default function App() {
                         </div>
 
                         {/* List of Batch Items */}
-                        <div className="max-h-48 overflow-y-auto no-scrollbar space-y-2 border-y border-blue-100 py-3">
+                        <div id="batch-list" className="max-h-48 overflow-y-auto no-scrollbar space-y-2 border-y border-blue-100 py-3">
                           {bulkData.map((item, idx) => (
                             <button
                               key={idx}
@@ -980,6 +1168,18 @@ export default function App() {
                         setBrandLogos={setBrandLogos}
                         secondaryLogos={secondaryLogos}
                         setSecondaryLogos={setSecondaryLogos}
+                        contactIconBgColors={contactIconBgColors}
+                        setContactIconBgColors={setContactIconBgColors}
+                        contactIconColors={contactIconColors}
+                        setContactIconColors={setContactIconColors}
+                        leftBgTypes={leftBgTypes}
+                        setLeftBgTypes={setLeftBgTypes}
+                        leftBgColors={leftBgColors}
+                        setLeftBgColors={setLeftBgColors}
+                        leftBgGradients1={leftBgGradients1}
+                        setLeftBgGradients1={setLeftBgGradients1}
+                        leftBgGradients2={leftBgGradients2}
+                        setLeftBgGradients2={setLeftBgGradients2}
                         setCoomarcasGlobalSubLogos={setCoomarcasGlobalSubLogos}
                         convertCloudImageUrl={convertCloudImageUrl}
                         getLoadedImageUrl={getLoadedImageUrl}
@@ -993,63 +1193,10 @@ export default function App() {
                         setLogoError={setLogoError}
                         secLogoError={secLogoError}
                         setSecLogoError={setSecLogoError}
+                        currentStyles={currentStyles}
                       />
                     </div>
                     
-                    {/* Controle para Modificar as Cores dos Ícones de Contato */}
-                    <div className="pt-4 border-t border-zinc-200/50 space-y-4">
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block ml-1">Cores dos Ícones de Contato</span>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Fundo (Círculo)</label>
-                          <div className="flex items-center gap-2">
-                            <div className="relative w-10 h-10 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
-                              <input 
-                                type="color" 
-                                value={data.contactIconBgColor || currentStyles.accent} 
-                                onChange={(e) => setData(prev => ({ ...prev, contactIconBgColor: e.target.value }))}
-                                className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
-                              />
-                            </div>
-                            <input 
-                              type="text" 
-                              value={data.contactIconBgColor || ''} 
-                              placeholder={currentStyles.accent}
-                              onChange={(e) => setData(prev => ({ ...prev, contactIconBgColor: e.target.value || undefined }))} 
-                              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 uppercase"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Símbolo (Desenho)</label>
-                          <div className="flex items-center gap-2">
-                            <div className="relative w-10 h-10 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
-                              <input 
-                                type="color" 
-                                value={data.contactIconColor || '#ffffff'} 
-                                onChange={(e) => setData(prev => ({ ...prev, contactIconColor: e.target.value }))}
-                                className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
-                              />
-                            </div>
-                            <input 
-                              type="text" 
-                              value={data.contactIconColor || ''} 
-                              placeholder="#ffffff"
-                              onChange={(e) => setData(prev => ({ ...prev, contactIconColor: e.target.value || undefined }))}
-                              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 uppercase"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      {(data.contactIconBgColor || data.contactIconColor) && (
-                        <button 
-                          onClick={() => setData(prev => ({ ...prev, contactIconBgColor: undefined, contactIconColor: undefined }))}
-                          className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest block ml-1 transition-colors"
-                        >
-                          Limpar Cores Personalizadas
-                        </button>
-                      )}
-                    </div>
                   </div>
                 </section>
                 <section className="space-y-6">
@@ -1102,17 +1249,20 @@ export default function App() {
                     <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center">
                       <Layers className="w-4.5 h-4.5 text-zinc-500" />
                     </div>
-                    Plano de Fundo (Direita)
+                    Plano de Fundo (Esquerda)
                   </h2>
                   <div className="space-y-4">
                     {/* Toggle between Sólido and Degradê */}
                     <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
                       <button
                         type="button"
-                        onClick={() => setData(prev => ({ ...prev, rightBgType: 'solid' }))}
+                        onClick={() => {
+                          setData(prev => ({ ...prev, leftBgType: 'solid' }));
+                          setLeftBgTypes(prev => ({ ...prev, [activeLayout]: 'solid' }));
+                        }}
                         className={cn(
                           "py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all",
-                          (data.rightBgType || 'solid') === 'solid'
+                          (data.leftBgType || 'solid') === 'solid'
                             ? "bg-white text-zinc-800 shadow-sm"
                             : "text-zinc-500 hover:text-zinc-800"
                         )}
@@ -1121,10 +1271,13 @@ export default function App() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setData(prev => ({ ...prev, rightBgType: 'gradient' }))}
+                        onClick={() => {
+                          setData(prev => ({ ...prev, leftBgType: 'gradient' }));
+                          setLeftBgTypes(prev => ({ ...prev, [activeLayout]: 'gradient' }));
+                        }}
                         className={cn(
                           "py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all",
-                          (data.rightBgType || 'solid') === 'gradient'
+                          (data.leftBgType || 'solid') === 'gradient'
                             ? "bg-white text-zinc-800 shadow-sm"
                             : "text-zinc-500 hover:text-zinc-800"
                         )}
@@ -1133,22 +1286,30 @@ export default function App() {
                       </button>
                     </div>
 
-                    {(data.rightBgType || 'solid') === 'solid' ? (
+                    {(data.leftBgType || 'solid') === 'solid' ? (
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold text-zinc-500 ml-1 uppercase tracking-wider block">Cor de Fundo</label>
                         <div className="flex items-center gap-2">
                           <div className="relative w-10 h-10 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
                             <input 
                               type="color" 
-                              value={data.rightBgColor || '#ffffff'} 
-                              onChange={(e) => setData(prev => ({ ...prev, rightBgColor: e.target.value }))}
+                              value={data.leftBgColor || '#ffffff'} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setData(prev => ({ ...prev, leftBgColor: val }));
+                                setLeftBgColors(prev => ({ ...prev, [activeLayout]: val }));
+                              }}
                               className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
                             />
                           </div>
                           <input 
                             type="text" 
-                            value={data.rightBgColor || '#ffffff'} 
-                            onChange={(e) => setData(prev => ({ ...prev, rightBgColor: e.target.value }))}
+                            value={data.leftBgColor || '#ffffff'} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setData(prev => ({ ...prev, leftBgColor: val }));
+                              setLeftBgColors(prev => ({ ...prev, [activeLayout]: val }));
+                            }}
                             className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-blue-500 uppercase font-bold"
                           />
                         </div>
@@ -1161,15 +1322,23 @@ export default function App() {
                             <div className="relative w-9 h-9 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
                               <input 
                                 type="color" 
-                                value={data.rightBgGradient1 || '#ffffff'} 
-                                onChange={(e) => setData(prev => ({ ...prev, rightBgGradient1: e.target.value }))}
+                                value={data.leftBgGradient1 || '#ffffff'} 
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setData(prev => ({ ...prev, leftBgGradient1: val }));
+                                  setLeftBgGradients1(prev => ({ ...prev, [activeLayout]: val }));
+                                }}
                                 className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
                               />
                             </div>
                             <input 
                               type="text" 
-                              value={data.rightBgGradient1 || '#ffffff'} 
-                              onChange={(e) => setData(prev => ({ ...prev, rightBgGradient1: e.target.value }))}
+                              value={data.leftBgGradient1 || '#ffffff'} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setData(prev => ({ ...prev, leftBgGradient1: val }));
+                                setLeftBgGradients1(prev => ({ ...prev, [activeLayout]: val }));
+                              }}
                               className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-2 py-1.5 text-[10px] font-mono outline-none focus:border-blue-500 uppercase font-bold"
                             />
                           </div>
@@ -1181,15 +1350,23 @@ export default function App() {
                             <div className="relative w-9 h-9 rounded-xl border border-zinc-200 flex-shrink-0 overflow-hidden shadow-sm">
                               <input 
                                 type="color" 
-                                value={data.rightBgGradient2 || '#f4f4f5'} 
-                                onChange={(e) => setData(prev => ({ ...prev, rightBgGradient2: e.target.value }))}
+                                value={data.leftBgGradient2 || '#f4f4f5'} 
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setData(prev => ({ ...prev, leftBgGradient2: val }));
+                                  setLeftBgGradients2(prev => ({ ...prev, [activeLayout]: val }));
+                                }}
                                 className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 p-0"
                               />
                             </div>
                             <input 
                               type="text" 
-                              value={data.rightBgGradient2 || '#f4f4f5'} 
-                              onChange={(e) => setData(prev => ({ ...prev, rightBgGradient2: e.target.value }))}
+                              value={data.leftBgGradient2 || '#f4f4f5'} 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setData(prev => ({ ...prev, leftBgGradient2: val }));
+                                setLeftBgGradients2(prev => ({ ...prev, [activeLayout]: val }));
+                              }}
                               className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-2 py-1.5 text-[10px] font-mono outline-none focus:border-blue-500 uppercase font-bold"
                             />
                           </div>
@@ -1197,14 +1374,14 @@ export default function App() {
                       </div>
                     )}
 
-                    {((data.rightBgType || 'solid') === 'gradient' || (data.rightBgColor && data.rightBgColor.toLowerCase() !== '#ffffff')) && (
+                    {((data.leftBgType || 'solid') === 'gradient' || (data.leftBgColor && data.leftBgColor.toLowerCase() !== '#ffffff')) && (
                       <button 
                         onClick={() => setData(prev => ({ 
                           ...prev, 
-                          rightBgType: 'solid', 
-                          rightBgColor: '#ffffff',
-                          rightBgGradient1: '#ffffff',
-                          rightBgGradient2: '#f4f4f5'
+                          leftBgType: 'solid', 
+                          leftBgColor: '#ffffff',
+                          leftBgGradient1: '#ffffff',
+                          leftBgGradient2: '#f4f4f5'
                         }))}
                         className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest block ml-1 transition-colors"
                       >
@@ -1955,8 +2132,8 @@ const drawSignatureToCanvas = (
   const h = 252;
 
   // Clear & Background with right sidebar Custom Solid Color / Gradient
-  const bgType = data.rightBgType || 'solid';
-  if (bgType === 'gradient') {
+  const rBgType = data.rightBgType || 'solid';
+  if (rBgType === 'gradient') {
     const rGradient = ctx.createLinearGradient(420, 0, w, h);
     rGradient.addColorStop(0, data.rightBgGradient1 || '#ffffff');
     rGradient.addColorStop(1, data.rightBgGradient2 || '#f4f4f5');
@@ -1967,10 +2144,15 @@ const drawSignatureToCanvas = (
   ctx.fillRect(0, 0, w, h);
 
   // Left Gradient Panel
-  const gradient = ctx.createLinearGradient(0, 0, 420, h);
-  gradient.addColorStop(0, styles.gradient1);
-  gradient.addColorStop(1, styles.gradient2);
-  ctx.fillStyle = gradient;
+  const lBgType = data.leftBgType || 'solid';
+  if (lBgType === 'gradient') {
+    const lGradient = ctx.createLinearGradient(0, 0, 420, h);
+    lGradient.addColorStop(0, data.leftBgGradient1 || styles.gradient1);
+    lGradient.addColorStop(1, data.leftBgGradient2 || styles.gradient2);
+    ctx.fillStyle = lGradient;
+  } else {
+    ctx.fillStyle = data.leftBgColor || styles.gradient1;
+  }
   ctx.fillRect(0, 0, 420, h);
 
   // Left Content
