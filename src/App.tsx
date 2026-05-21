@@ -1900,7 +1900,6 @@ export default function App() {
 
                       {activeLayout === 'coomarcas' && (
                         <div className="pt-6 border-t border-zinc-100 space-y-4">
-                          <label className="text-xs font-black text-zinc-500 ml-1 uppercase tracking-wider block">Logotipos Adicionais (4 espaços abaixo do site)</label>
                           <div className="grid grid-cols-2 gap-3">
                             {[0, 1, 2, 3].map((idx) => {
                               const currentSubLogo = data.coomarcasSubLogos?.[idx] || null;
