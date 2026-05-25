@@ -73,6 +73,10 @@ export interface SignatureData {
   coomarcasSubLogosScale?: number[];
   contactIconBgColor?: string;
   contactIconColor?: string;
+  leftBgType?: 'solid' | 'gradient';
+  leftBgColor?: string;
+  leftBgGradient1?: string;
+  leftBgGradient2?: string;
   rightBgType?: 'solid' | 'gradient';
   rightBgColor?: string;
   rightBgGradient1?: string;
@@ -1898,153 +1902,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      {activeLayout === 'coomarcas' && (
-                        <div className="pt-6 border-t border-zinc-100 space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            {[0, 1, 2, 3].map((idx) => {
-                              const currentSubLogo = data.coomarcasSubLogos?.[idx] || null;
-                              return (
-                                <div key={idx} className="p-3 bg-zinc-50 border border-zinc-200 rounded-2xl flex flex-col gap-2">
-                                  <span className="text-[9px] font-bold text-zinc-400 uppercase">Espaço {idx + 1}</span>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-11 h-11 bg-white border border-zinc-200 rounded-lg flex items-center justify-center relative overflow-hidden group flex-shrink-0 shadow-sm hover:border-zinc-300 transition-colors">
-                                      {currentSubLogo ? (
-                                        <img src={currentSubLogo} alt={`Selo ${idx + 1}`} className="w-full h-full object-contain p-1" />
-                                      ) : (
-                                        <Plus className="w-4 h-4 text-zinc-300" />
-                                      )}
-                                      <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={(e) => handleCoomarcasSubLogoUpload(idx, e)} 
-                                        className="absolute inset-0 opacity-0 cursor-pointer" 
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0 space-y-1">
-                                      <input 
-                                        type="text" 
-                                        placeholder="Cole link (URL)"
-                                        value={currentSubLogo && currentSubLogo.startsWith('http') ? currentSubLogo : ''}
-                                        onChange={(e) => {
-                                          const val = e.target.value || null;
-                                          const newSubLogos = [...(data.coomarcasSubLogos || [null, null, null, null])];
-                                          newSubLogos[idx] = val;
-                                          setCoomarcasGlobalSubLogos(newSubLogos);
-                                          setData(prev => ({ ...prev, coomarcasSubLogos: newSubLogos }));
-                                        }}
-                                        className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[10px] font-medium min-w-0 outline-none focus:border-blue-500 transition-all shadow-sm"
-                                      />
-                                      {currentSubLogo && (
-                                        <div className="flex flex-col gap-1">
-                                          <button 
-                                            onClick={() => {
-                                              const newSubLogos = [...(data.coomarcasSubLogos || [null, null, null, null])];
-                                              newSubLogos[idx] = null;
-                                              setCoomarcasGlobalSubLogos(newSubLogos);
-                                              setData(prev => ({ ...prev, coomarcasSubLogos: newSubLogos }));
-                                            }}
-                                            className="text-[8px] font-black text-red-500 hover:text-red-650 uppercase tracking-widest block text-left"
-                                          >
-                                            Remover Logo
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {currentSubLogo && (
-                                    <div className="mt-2 pt-2 border-t border-zinc-200/50 space-y-2">
-                                      {/* Zoom */}
-                                      <div className="space-y-0.5">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[8px] font-bold text-zinc-400 uppercase">Tamanho</span>
-                                          <span className="text-[8px] font-bold text-blue-600 font-mono">{Math.round((data.coomarcasSubLogosScale?.[idx] ?? 1) * 100)}%</span>
-                                        </div>
-                                        <input 
-                                          type="range" 
-                                          min="0.2" 
-                                          max="3" 
-                                          step="0.01" 
-                                          value={data.coomarcasSubLogosScale?.[idx] ?? 1} 
-                                          onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setData(prev => {
-                                              const scales = [...(prev.coomarcasSubLogosScale || [1, 1, 1, 1])];
-                                              scales[idx] = val;
-                                              return { ...prev, coomarcasSubLogosScale: scales };
-                                            });
-                                          }}
-                                          className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-blue-600"
-                                        />
-                                      </div>
-                                      {/* X Offset */}
-                                      <div className="space-y-0.5">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[8px] font-bold text-zinc-400 uppercase">Mover X</span>
-                                          <span className="text-[8px] font-bold text-zinc-500 font-mono">{Math.round(data.coomarcasSubLogosX?.[idx] ?? 0)}px</span>
-                                        </div>
-                                        <input 
-                                          type="range" 
-                                          min="-150" 
-                                          max="150" 
-                                          step="1" 
-                                          value={data.coomarcasSubLogosX?.[idx] ?? 0} 
-                                          onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setData(prev => {
-                                              const xs = [...(prev.coomarcasSubLogosX || [0, 0, 0, 0])];
-                                              xs[idx] = val;
-                                              return { ...prev, coomarcasSubLogosX: xs };
-                                            });
-                                          }}
-                                          className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
-                                        />
-                                      </div>
-                                      {/* Y Offset */}
-                                      <div className="space-y-0.5">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[8px] font-bold text-zinc-400 uppercase">Mover Y</span>
-                                          <span className="text-[8px] font-bold text-zinc-500 font-mono">{Math.round(data.coomarcasSubLogosY?.[idx] ?? 0)}px</span>
-                                        </div>
-                                        <input 
-                                          type="range" 
-                                          min="-100" 
-                                          max="100" 
-                                          step="1" 
-                                          value={data.coomarcasSubLogosY?.[idx] ?? 0} 
-                                          onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setData(prev => {
-                                              const ys = [...(prev.coomarcasSubLogosY || [0, 0, 0, 0])];
-                                              ys[idx] = val;
-                                              return { ...prev, coomarcasSubLogosY: ys };
-                                            });
-                                          }}
-                                          className="w-full h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer accent-zinc-500"
-                                        />
-                                      </div>
-                                      {/* Individual Reset */}
-                                      <button 
-                                        onClick={() => setData(prev => {
-                                          const xs = [...(prev.coomarcasSubLogosX || [0, 0, 0, 0])];
-                                          const ys = [...(prev.coomarcasSubLogosY || [0, 0, 0, 0])];
-                                          const scales = [...(prev.coomarcasSubLogosScale || [1, 1, 1, 1])];
-                                          xs[idx] = 0;
-                                          ys[idx] = 0;
-                                          scales[idx] = 1;
-                                          return { ...prev, coomarcasSubLogosX: xs, coomarcasSubLogosY: ys, coomarcasSubLogosScale: scales };
-                                        })}
-                                        className="w-full py-1 text-[8px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-650 bg-white border border-zinc-200 rounded-md shadow-sm transition-all"
-                                      >
-                                        Limpar Ajustes
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+
                     </div>
                   </div>
                 </div>
